@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=C:\Users\HP\Documents\movie_recommendation_app\venv
+set VIRTUAL_ENV=D:\Programming\Mini-Project\movie-recommendation-app\venv
 
 if not defined PROMPT set PROMPT=$P$G
 

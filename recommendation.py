@@ -35,31 +35,59 @@ def get_content_based_recommendations(movie_id):
 
     return similar_movies
 
+import pandas as pd
+from sklearn.neighbors import NearestNeighbors
+from sklearn.metrics.pairwise import cosine_similarity
 
-def get_collaborative_filtering_recommendations(movie_id):
+class RecommendationNotFoundError(Exception):
+    pass
+
+def get_collaborative_filtering_recommendations(user_id):
     # Load ratings data
     ratings_df = pd.read_csv('ratings.csv')
 
     # Load movie data (assuming you have a separate CSV for movie data)
     movies_df = pd.read_csv('project.csv')
 
-    # Prepare the data for KNN
+    # Check if user exists
+    if int(user_id) not in ratings_df['user_id'].unique():
+        raise RecommendationNotFoundError(f"User with ID {user_id} not found")
+
+    # Create a user-movie matrix where rows are users, columns are movies, and values are ratings
     user_movie_matrix = ratings_df.pivot_table(index='user_id', columns='movie_id', values='rating').fillna(0)
 
-    # Fit the KNN model
+    # Fit the KNN model to find similar users based on their rating behavior
     knn = NearestNeighbors(n_neighbors=5, metric='cosine')
-    knn.fit(user_movie_matrix.T)
+    knn.fit(user_movie_matrix)
 
-    # Find the index of the input movie_id
-    movie_index = user_movie_matrix.columns.get_loc(movie_id)
+    # Find the index of the input user_id
+    user_index = user_movie_matrix.index.get_loc(int(user_id))
 
-    # Get the distances and indices of the nearest neighbors
-    distances, indices = knn.kneighbors(user_movie_matrix.iloc[:, movie_index].values.reshape(1, -1))
+    # Get the distances and indices of the nearest neighbors (similar users)
+    distances, indices = knn.kneighbors(user_movie_matrix.iloc[user_index].values.reshape(1, -1), n_neighbors=5)
 
-    # Get the recommended movie IDs
-    recommended_movie_ids = user_movie_matrix.columns[indices.flatten()].tolist()
+    # Get the IDs of the similar users
+    similar_user_ids = user_movie_matrix.index[indices.flatten()].tolist()
+
+    # Find the movies that similar users have rated highly but the input user hasn't rated yet
+    user_watched_movies = user_movie_matrix.loc[int(user_id)]
+    watched_movie_ids = user_watched_movies[user_watched_movies > 0].index.tolist()
+
+    # Find movies that similar users have rated highly
+    similar_users_movies = user_movie_matrix.loc[similar_user_ids]
+    movie_recommendations = similar_users_movies.mean(axis=0).sort_values(ascending=False)
+
+    # Filter out movies the input user has already watched
+    movie_recommendations = movie_recommendations[~movie_recommendations.index.isin(watched_movie_ids)]
+
+    # Check if there are any recommendations
+    if movie_recommendations.empty:
+        raise RecommendationNotFoundError(f"No recommendations found for user {user_id}")
+
+    # Get the top 10 movie recommendations
+    top_movie_ids = movie_recommendations.index[:10].tolist()
 
     # Join recommendations with movie data to get names
-    recommended_movies = pd.merge(pd.DataFrame({'movie_id': recommended_movie_ids}), movies_df, on='movie_id')
+    recommended_movies = pd.merge(pd.DataFrame({'movie_id': top_movie_ids}), movies_df, on='movie_id')
 
     return recommended_movies
