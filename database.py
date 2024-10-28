@@ -1,9 +1,27 @@
 import pandas as pd
 import os
+from flask import jsonify  # Ensure this is imported
+
 
 def get_movies():
+    # Load the CSV file into a DataFrame
     movies_df = pd.read_csv('project.csv')
-    return movies_df[['movie_id', 'movie_name', 'year', 'genre']].to_dict(orient='records')
+    
+    # Handle NaN values by replacing them with defaults
+    movies_df['movie_id'].fillna("Unknown", inplace=True)
+    movies_df['movie_name'].fillna("Untitled", inplace=True)
+    movies_df['year'].fillna("Unknown", inplace=True)
+    movies_df['genre'].fillna("Unknown", inplace=True)
+    movies_df['language'].fillna("Unknown", inplace=True)
+
+    # Convert the DataFrame to a list of dictionaries
+    movies = movies_df[['movie_id', 'movie_name', 'year', 'genre', 'language']].to_dict(orient='records')
+    
+    # Return the list of dictionaries (NOT jsonify here)
+    return movies
+
+
+
 
 def get_user_ratings():
     ratings_df = pd.read_csv('ratings.csv')

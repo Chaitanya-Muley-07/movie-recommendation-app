@@ -1,16 +1,19 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS  # Import the CORS package
 from database import get_movies, add_user_rating, get_user_ratings
 from recommendation import get_collaborative_filtering_recommendations, RecommendationNotFoundError
 from recommendation import get_content_based_recommendations
 import pandas as pd
 import os
-from flask import Flask, jsonify, request
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
+
 
 @app.route('/movies', methods=['GET'])
 def movies():
-    return jsonify(get_movies())
+    movies_list = get_movies()
+    return jsonify(movies_list) 
 
 @app.route('/recommendations/collaborative/<string:user_id>', methods=['GET'])
 def collaborative_recommendations(user_id):

@@ -15,14 +15,16 @@ def get_content_based_recommendations(movie_id):
     # Extract overview and cast data
     overview_data = movies_df['overview']
     cast_data = movies_df['cast']
+    genre_data=movies_df['genre']
 
     # Vectorize overview and cast data using Bag-of-Words (CountVectorizer)
     count_vectorizer = CountVectorizer(stop_words='english')
     overview_vectors = count_vectorizer.fit_transform(overview_data)
     cast_vectors = count_vectorizer.fit_transform(cast_data)
+    genre_vector=count_vectorizer.fit_transform(genre_data)
 
     # Combine overview and cast vectors
-    combined_vectors = hstack((overview_vectors, cast_vectors))
+    combined_vectors = hstack((overview_vectors, cast_vectors, genre_vector))
 
     # Calculate cosine similarity
     cosine_sim = cosine_similarity(combined_vectors)
@@ -31,13 +33,13 @@ def get_content_based_recommendations(movie_id):
     movie_index = movies_df[movies_df['movie_id'] == movie_id].index[0]
 
     # Get similar movies based on cosine similarity
-    similar_movies = movies_df.iloc[cosine_sim[movie_index].argsort()[::-1][1:11]]
+    similar_movies = movies_df.iloc[cosine_sim[movie_index].argsort()[::-1][1:5]]
 
     return similar_movies
 
-import pandas as pd
-from sklearn.neighbors import NearestNeighbors
-from sklearn.metrics.pairwise import cosine_similarity
+# import pandas as pd
+# from sklearn.neighbors import NearestNeighbors
+# from sklearn.metrics.pairwise import cosine_similarity
 
 class RecommendationNotFoundError(Exception):
     pass
@@ -85,7 +87,7 @@ def get_collaborative_filtering_recommendations(user_id):
         raise RecommendationNotFoundError(f"No recommendations found for user {user_id}")
 
     # Get the top 10 movie recommendations
-    top_movie_ids = movie_recommendations.index[:10].tolist()
+    top_movie_ids = movie_recommendations.index[:4].tolist()
 
     # Join recommendations with movie data to get names
     recommended_movies = pd.merge(pd.DataFrame({'movie_id': top_movie_ids}), movies_df, on='movie_id')
